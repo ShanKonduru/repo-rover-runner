@@ -34,13 +34,31 @@ class ScriptedOps(BaseRepoOps):
 class TestBaseRepoOps(unittest.TestCase):
     def test_run_git_success(self) -> None:
         ops = BaseRepoOps()
-        with patch("repo_rover_runner.operations.subprocess.run", return_value=FakeResult(0, "ok", "")):
+        with patch("repo_rover_runner.operations.shutil.which", return_value="/usr/bin/git"), patch(
+            "repo_rover_runner.operations.subprocess.run", return_value=FakeResult(0, "ok", "")
+        ):
             result = ops.run_git(["status"])
             self.assertEqual(result.stdout, "ok")
 
     def test_run_git_failure(self) -> None:
         ops = BaseRepoOps()
-        with patch("repo_rover_runner.operations.subprocess.run", return_value=FakeResult(1, "o", "e")):
+        with patch("repo_rover_runner.operations.shutil.which", return_value="/usr/bin/git"), patch(
+            "repo_rover_runner.operations.subprocess.run", return_value=FakeResult(1, "o", "e")
+        ):
+            with self.assertRaises(GitCommandError):
+                ops.run_git(["status"])
+
+    def test_run_git_requires_non_empty_args(self) -> None:
+        with self.assertRaises(GitCommandError):
+            BaseRepoOps().run_git([])
+
+    def test_run_git_rejects_empty_arg(self) -> None:
+        with self.assertRaises(GitCommandError):
+            BaseRepoOps().run_git([""])
+
+    def test_run_git_requires_git_on_path(self) -> None:
+        ops = BaseRepoOps()
+        with patch("repo_rover_runner.operations.shutil.which", return_value=None):
             with self.assertRaises(GitCommandError):
                 ops.run_git(["status"])
 

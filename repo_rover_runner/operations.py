@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from pathlib import Path
 from typing import Iterable, List, Optional
 
@@ -14,9 +14,23 @@ class BaseRepoOps(RepoOps):
 
     provider_name = "base"
 
+    def _resolve_git_executable(self) -> str:
+        git_executable = shutil.which("git")
+        if not git_executable:
+            raise GitCommandError("git executable was not found on PATH")
+        return git_executable
+
+    def _normalize_git_args(self, args: List[str]) -> List[str]:
+        if not args:
+            raise GitCommandError("git command arguments cannot be empty")
+        if any(not isinstance(arg, str) or not arg for arg in args):
+            raise GitCommandError("git command arguments must be non-empty strings")
+        return args
+
     def run_git(self, args: List[str], cwd: Optional[Path] = None, check: bool = True) -> subprocess.CompletedProcess[str]:
-        cmd = ["git", *args]
-        result = subprocess.run(
+        normalized_args = self._normalize_git_args(args)
+        cmd = [self._resolve_git_executable(), *normalized_args]
+        result = subprocess.run(  # nosec B603
             cmd,
             cwd=str(cwd) if cwd else None,
             capture_output=True,
