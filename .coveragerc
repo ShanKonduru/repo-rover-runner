@@ -1,0 +1,10 @@
+[run]
+source =
+    repo_rover_runner
+    repo_rover_runner_client
+    repo_rover_runner_cli
+
+[report]
+fail_under = 100
+show_missing = True
+skip_empty = True

@@ -1,0 +1,208 @@
+# Repo Rover Runner
+
+Repo Rover Runner is a local automation toolkit that standardizes a small set of git workflows for both GitHub and Bitbucket repositories.
+
+It is built around a Python CLI plus Windows (.bat) and Linux/macOS (.sh) helper scripts.
+
+## What This Workspace Is Doing
+
+This project automates these tasks against a remote git repository:
+
+1. Connectivity check (ping remote)
+2. Clone if needed
+3. Create or attach to a working branch
+4. List local and remote branches
+5. Copy one or more files/folders into the repo
+6. Commit and push to remote branch
+
+It does not call GitHub or Bitbucket REST APIs directly. It relies on standard git commands, so it works with either provider as long as the remote URL and credentials are valid.
+
+## Core CLI
+
+Primary entrypoint:
+
+```bash
+python repo_rover_runner_client.py --help
+```
+
+Legacy compatibility wrapper:
+
+```bash
+python repo_rover_runner_cli.py --help
+```
+
+Supported subcommands:
+
+1. `ping`
+2. `clone`
+3. `use-branch`
+4. `list-branches`
+5. `push-files`
+
+### Command Behavior Summary
+
+`ping`
+- Runs `git ls-remote <repo-url> HEAD`
+
+`clone`
+- Clones into destination folder
+- Fails if destination exists and is not empty
+
+`use-branch`
+- Fetches remote first
+- Reuses local branch if it exists
+- Otherwise tracks remote branch if it exists
+- Otherwise creates from remote base branch
+- Otherwise creates from local base branch
+- If repository has no commits, creates orphan branch
+
+`list-branches`
+- Fetches remote first
+- Prints local and/or remote branches by scope: `all | local | remote`
+
+`push-files`
+- Ensures branch exists (same logic as `use-branch`)
+- Copies provided files/folders into target directory in repo
+- Stages copied paths only
+- If no staged diff, exits without commit/push
+- Otherwise commits and pushes with upstream tracking
+
+## Authentication Model
+
+For SSH remotes, normal git SSH auth applies.
+
+For HTTPS remotes, the CLI and scripts support temporary `GIT_ASKPASS` credentials via environment variables:
+
+- GitHub: `GITHUB_TOKEN` and optional `GIT_USERNAME` (default `x-access-token`)
+- Bitbucket: `BITBUCKET_APP_PASSWORD` (or `BITBUCKET_TOKEN`) and `BITBUCKET_USERNAME` (or `GIT_USERNAME`)
+
+Provider selection:
+
+- `REPO_PROVIDER=github`
+- `REPO_PROVIDER=bitbucket`
+- `REPO_PROVIDER=auto` (default): prefers GitHub token if present, otherwise Bitbucket credentials
+
+The project does not persist credentials.
+
+## Configuration Files
+
+Preferred provider-specific files:
+
+- `repo_rover_runner.github.env`
+- `repo_rover_runner.bitbucket.env`
+
+Legacy combined template:
+
+- `repo_rover_runner.env.example`
+- optional runtime file: `repo_rover_runner.env`
+
+Common required variables:
+
+- `REPO_URL`
+- `LOCAL_REPO_PATH`
+- `TARGET_BRANCH`
+
+Common optional variables:
+
+- `BASE_BRANCH` (default `main`)
+- `REMOTE` (default `origin`)
+- `TARGET_DIR` (default `integration-tests`)
+- `COMMIT_MESSAGE`
+- `BRANCH_TO_LIST`
+
+Script config resolution order:
+
+1. `REPO_CONFIG_FILE` if provided
+2. provider-specific file if `REPO_PROVIDER` set
+3. auto-fallback: `repo_rover_runner.bitbucket.env`, then `repo_rover_runner.github.env`, then `repo_rover_runner.env`
+
+## Helper Scripts
+
+The workspace includes paired scripts for Windows and Linux/macOS to run end-to-end checks quickly.
+
+Main scripted operations:
+
+1. `test_ping_repo` - remote reachability/auth check
+2. `create_new_branch` - clone-if-needed then `use-branch`
+3. `test_list_branches` - branch listing
+4. `test_use_branch` - branch checkout/create flow
+5. `list_files_in_branch` - file listing from a branch ref
+6. `test_push_dummy` - push `dummy_payload.txt`
+
+One-command suites:
+
+- `run_github_tests.bat` / `run_github_tests.sh`
+- `run_bitbucket_tests.bat` / `run_bitbucket_tests.sh`
+
+Connectivity-only suites:
+
+- `run_github_connectivity.bat` / `run_github_connectivity.sh`
+- `run_bitbucket_connectivity.bat` / `run_bitbucket_connectivity.sh`
+
+## Quick Start
+
+1. Create and fill one config file (`repo_rover_runner.github.env` or `repo_rover_runner.bitbucket.env`).
+2. Set provider if needed: `REPO_PROVIDER=github` or `REPO_PROVIDER=bitbucket`.
+3. Run one command:
+
+Windows:
+
+```bat
+run_github_tests.bat
+```
+
+or
+
+```bat
+run_bitbucket_tests.bat
+```
+
+Linux/macOS:
+
+```bash
+./run_github_tests.sh
+```
+
+or
+
+```bash
+./run_bitbucket_tests.sh
+```
+
+## Project Structure
+
+Python package:
+
+- `repo_rover_runner/interfaces.py`: operation contract
+- `repo_rover_runner/operations.py`: shared git implementation and provider classes
+- `repo_rover_runner/factory.py`: provider selection
+- `repo_rover_runner/auth.py`: temporary HTTPS askpass setup and env resolution
+- `repo_rover_runner/exceptions.py`: custom error type
+
+CLI:
+
+- `repo_rover_runner_client.py`: main CLI
+- `repo_rover_runner_cli.py`: legacy wrapper to main CLI
+
+Tests:
+
+- `tests/test_auth.py`
+- `tests/test_factory.py`
+- `tests/test_operations.py`
+- `tests/test_cli_client.py`
+
+## Unit Tests
+
+Windows:
+
+```bat
+run_repo_rover_runner_unit_tests.bat
+```
+
+Linux/macOS:
+
+```bash
+./run_repo_rover_runner_unit_tests.sh
+```
+
+The test runner executes unittest with coverage and prints a coverage report.

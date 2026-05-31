@@ -1,0 +1,9 @@
+repo_rover_runner.env
+repo_rover_runner.*.env
+*.env
+*.env.*
+!*.env.example
+.coverage
+tmp/
+__pycache__/
+*.pyc
