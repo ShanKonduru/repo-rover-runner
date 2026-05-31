@@ -56,6 +56,165 @@ Exposed MCP tools:
 4. `list_branches`
 5. `push_files`
 
+### MCP Client JSON Configurations
+
+The MCP server uses stdio transport, so most clients use a JSON entry under `mcpServers`.
+
+Minimal server command:
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "repo-rover-runner-mcp"
+      }
+   }
+}
+```
+
+If the command is not on PATH, use an explicit Python executable and script path.
+
+Windows example (project-local virtual environment):
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "C:\\MyProjects\\repo-rover-runner\\.venv\\Scripts\\python.exe",
+         "args": [
+            "C:\\MyProjects\\repo-rover-runner\\repo_rover_runner_mcp_server.py"
+         ]
+      }
+   }
+}
+```
+
+Linux/macOS example:
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "/path/to/repo-rover-runner/.venv/bin/python",
+         "args": [
+            "/path/to/repo-rover-runner/repo_rover_runner_mcp_server.py"
+         ]
+      }
+   }
+}
+```
+
+#### Client-Specific Examples
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "repo-rover-runner-mcp",
+         "env": {
+            "REPO_PROVIDER": "github",
+            "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+            "GIT_USERNAME": "x-access-token"
+         }
+      }
+   }
+}
+```
+
+VS Code MCP config (settings.json):
+
+```json
+{
+   "mcp": {
+      "servers": {
+         "repo-rover-runner": {
+            "command": "C:\\MyProjects\\repo-rover-runner\\.venv\\Scripts\\python.exe",
+            "args": [
+               "C:\\MyProjects\\repo-rover-runner\\repo_rover_runner_mcp_server.py"
+            ],
+            "env": {
+               "REPO_PROVIDER": "auto"
+            }
+         }
+      }
+   }
+}
+```
+
+If `repo-rover-runner-mcp` is on PATH, you can also use:
+
+```json
+{
+   "mcp": {
+      "servers": {
+         "repo-rover-runner": {
+            "command": "repo-rover-runner-mcp",
+            "env": {
+               "REPO_PROVIDER": "auto"
+            }
+         }
+      }
+   }
+}
+```
+
+Cursor/Cline-style MCP config:
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "repo-rover-runner-mcp",
+         "args": [],
+         "env": {
+            "REPO_PROVIDER": "auto"
+         }
+      }
+   }
+}
+```
+
+Generic host config with explicit working defaults:
+
+```json
+{
+   "mcpServers": {
+      "repo-rover-runner": {
+         "command": "repo-rover-runner-mcp",
+         "env": {
+            "REPO_PROVIDER": "bitbucket",
+            "BITBUCKET_USERNAME": "your-user",
+            "BITBUCKET_APP_PASSWORD": "your-app-password"
+         }
+      }
+   }
+}
+```
+
+#### Recommended Environment Variables for MCP Clients
+
+Most clients allow per-server `env` values. Use those to avoid embedding credentials in URLs.
+
+GitHub HTTPS auth:
+
+1. `REPO_PROVIDER=github`
+2. `GITHUB_TOKEN=<token>`
+3. `GIT_USERNAME=x-access-token` (optional; default is already `x-access-token`)
+
+Bitbucket HTTPS auth:
+
+1. `REPO_PROVIDER=bitbucket`
+2. `BITBUCKET_USERNAME=<username>` (or `GIT_USERNAME`)
+3. `BITBUCKET_APP_PASSWORD=<app-password>` (or `BITBUCKET_TOKEN`)
+
+Notes:
+
+1. Keep secrets out of committed files.
+2. Prefer environment-variable expansion supported by your MCP host.
+3. If your host cannot expand `${VAR}`, set values directly in that host's secure secret settings.
+
 Supported subcommands:
 
 1. `ping`
