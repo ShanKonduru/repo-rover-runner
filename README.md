@@ -1,5 +1,11 @@
 # Repo Rover Runner
 
+```text
++----------------------------+
+|      REPO ROVER RUNNER     |
++----------------------------+
+```
+
 Repo Rover Runner is a local automation toolkit that standardizes a small set of git workflows for both GitHub and Bitbucket repositories.
 
 It is built around a Python CLI plus Windows (.bat) and Linux/macOS (.sh) helper scripts.
@@ -226,13 +232,16 @@ Supported subcommands:
 ### Command Behavior Summary
 
 `ping`
+
 - Runs `git ls-remote <repo-url> HEAD`
 
 `clone`
+
 - Clones into destination folder
 - Fails if destination exists and is not empty
 
 `use-branch`
+
 - Fetches remote first
 - Reuses local branch if it exists
 - Otherwise tracks remote branch if it exists
@@ -241,10 +250,12 @@ Supported subcommands:
 - If repository has no commits, creates orphan branch
 
 `list-branches`
+
 - Fetches remote first
 - Prints local and/or remote branches by scope: `all | local | remote`
 
 `push-files`
+
 - Ensures branch exists (same logic as `use-branch`)
 - Copies provided files/folders into target directory in repo
 - Stages copied paths only

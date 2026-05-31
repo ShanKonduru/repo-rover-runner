@@ -4,6 +4,7 @@ import runpy
 import sys
 import unittest
 import os
+from io import StringIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -34,9 +35,11 @@ class TestCliClient(unittest.TestCase):
     def test_main_ping(self) -> None:
         mock_ops = MagicMock()
         mock_ops.provider_name = "github"
-        with patch("repo_rover_runner_client.RepoOpsFactory.create", return_value=mock_ops), patch("repo_rover_runner_client.GitAuthSession"):
+        stdout = StringIO()
+        with patch("sys.stdout", stdout), patch("repo_rover_runner_client.RepoOpsFactory.create", return_value=mock_ops), patch("repo_rover_runner_client.GitAuthSession"):
             rc = repo_rover_runner_client.main(["ping", "--repo-url", "https://x"])
         self.assertEqual(rc, 0)
+        self.assertIn("REPO ROVER RUNNER", stdout.getvalue())
         mock_ops.ping_repo.assert_called_once_with("https://x")
 
     def test_main_clone(self) -> None:

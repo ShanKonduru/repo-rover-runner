@@ -11,6 +11,10 @@ from typing import Optional, Sequence
 
 from repo_rover_runner import GitAuthSession, GitCommandError, RepoOpsFactory
 
+BANNER = r"""+----------------------------+
+|      REPO ROVER RUNNER     |
++----------------------------+"""
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -78,6 +82,8 @@ def _get_repo_url_for_auth(command: str, args: argparse.Namespace, provider_ops:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    print(BANNER)
 
     try:
         provider_ops = RepoOpsFactory.create(args.provider)
