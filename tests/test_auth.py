@@ -90,7 +90,10 @@ class TestGitAuthSession(unittest.TestCase):
             "GITHUB_TOKEN": "gh-token",
             "GIT_USERNAME": "x-access-token",
         }
-        with patch.dict(os.environ, env, clear=True), patch("repo_rover_runner.auth.os.name", "nt"):
+        native_path_cls = type(Path(tempfile.gettempdir()))
+        with patch.dict(os.environ, env, clear=True), patch("repo_rover_runner.auth.os.name", "nt"), patch(
+            "repo_rover_runner.auth.Path", native_path_cls
+        ):
             with GitAuthSession("https://host/repo") as session:
                 self.assertIsNotNone(session.askpass_file)
                 assert session.askpass_file is not None
