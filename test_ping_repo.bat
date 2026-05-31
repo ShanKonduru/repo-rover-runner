@@ -2,6 +2,8 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
+set "PYTHON_EXE=%SCRIPT_DIR%.venv\Scripts\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
 if not "%REPO_CONFIG_FILE%"=="" (
   set "ENV_FILE=%REPO_CONFIG_FILE%"
 ) else if /I "%REPO_PROVIDER%"=="github" (
@@ -31,7 +33,7 @@ if "%REPO_URL%"=="" (
 )
 
 set "ASKPASS_FILE="
-python "%SCRIPT_DIR%repo_rover_runner_cli.py" ping --repo-url "%REPO_URL%"
+"%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" ping --repo-url "%REPO_URL%"
 if %ERRORLEVEL%==0 exit /b 0
 
 if /I "%REPO_URL:~0,8%"=="https://" (
@@ -116,7 +118,7 @@ if /I "%REPO_URL:~0,8%"=="https://" (
   set "GIT_TERMINAL_PROMPT=0"
 )
 
-python "%SCRIPT_DIR%repo_rover_runner_cli.py" ping --repo-url "%REPO_URL%"
+  "%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" ping --repo-url "%REPO_URL%"
 set "RC=%ERRORLEVEL%"
 if defined ASKPASS_FILE if exist "%ASKPASS_FILE%" del /q "%ASKPASS_FILE%" >nul 2>&1
 exit /b %RC%

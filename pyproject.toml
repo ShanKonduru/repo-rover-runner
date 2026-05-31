@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repo-rover-runner"
-version = "0.1.11"
+version = "0.1.12"
 description = "Cross-platform GitHub/Bitbucket repository automation toolkit"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -20,6 +20,8 @@ classifiers = [
 ]
 dependencies = [
   "mcp>=1.0.0",
+  "pyfiglet>=1.0.4",
+  "rich>=15.0.0",
 ]
 
 [project.optional-dependencies]

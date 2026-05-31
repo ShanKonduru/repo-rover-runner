@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import runpy
 import sys
 import unittest
@@ -12,6 +13,9 @@ import repo_rover_runner_client
 
 
 class TestCliClient(unittest.TestCase):
+    def test_interpolate_channel_with_single_line(self) -> None:
+        self.assertEqual(repo_rover_runner_client._interpolate_channel(10, 20, 0, 1), 10)
+
     def test_get_repo_url_for_auth_with_ping(self) -> None:
         parser = repo_rover_runner_client.build_parser()
         args = parser.parse_args(["ping", "--repo-url", "https://x"])
@@ -90,6 +94,44 @@ class TestCliClient(unittest.TestCase):
         with patch("repo_rover_runner_client.RepoOpsFactory.create", side_effect=repo_rover_runner_client.GitCommandError("x")):
             rc = repo_rover_runner_client.main(["ping", "--repo-url", "https://x"])
         self.assertEqual(rc, 1)
+
+    def test_render_banner_falls_back_when_pyfiglet_is_missing(self) -> None:
+        original_import = builtins.__import__
+
+        def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "pyfiglet" or name.startswith("pyfiglet."):
+                raise ImportError
+            return original_import(name, globals, locals, fromlist, level)
+
+        with patch("builtins.__import__", side_effect=fake_import):
+            self.assertEqual(repo_rover_runner_client._render_banner(), repo_rover_runner_client.BANNER)
+
+    def test_render_banner_tries_multiple_fonts(self) -> None:
+        mock_figlet = MagicMock()
+        mock_figlet.renderText.return_value = "banner"
+
+        with patch("pyfiglet.Figlet", side_effect=[Exception("x"), Exception("x"), Exception("x"), Exception("x"), mock_figlet]):
+            self.assertEqual(repo_rover_runner_client._render_banner(), "banner")
+
+    def test_render_banner_falls_back_when_all_fonts_fail(self) -> None:
+        with patch("pyfiglet.Figlet", side_effect=Exception("x")):
+            self.assertEqual(repo_rover_runner_client._render_banner(), repo_rover_runner_client.BANNER)
+
+    def test_print_banner_falls_back_without_rich(self) -> None:
+        stdout = StringIO()
+        original_import = builtins.__import__
+
+        def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "rich" or name.startswith("rich."):
+                raise ImportError
+            return original_import(name, globals, locals, fromlist, level)
+
+        with patch("repo_rover_runner_client._render_banner", return_value="line1\nline2"), patch("sys.stdout", stdout), patch(
+            "builtins.__import__", side_effect=fake_import
+        ):
+            repo_rover_runner_client._print_banner()
+
+        self.assertEqual(stdout.getvalue(), "line1\nline2\n")
 
     def test_legacy_wrapper_executes(self) -> None:
         with patch("repo_rover_runner_client.main", return_value=0):

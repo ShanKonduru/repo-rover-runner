@@ -14,6 +14,51 @@ from repo_rover_runner import GitAuthSession, GitCommandError, RepoOpsFactory
 BANNER = r"""+----------------------------+
 |      REPO ROVER RUNNER     |
 +----------------------------+"""
+GRADIENT_START = (56, 189, 248)
+GRADIENT_END = (244, 63, 94)
+
+
+def _interpolate_channel(start: int, end: int, index: int, total: int) -> int:
+    if total <= 1:
+        return start
+    return round(start + (end - start) * (index / (total - 1)))
+
+
+def _render_banner() -> str:
+    try:
+        from pyfiglet import Figlet
+    except ImportError:
+        return BANNER
+
+    for font_name in ("double_blocky", "blocky", "big", "slant", "standard"):
+        try:
+            return Figlet(font=font_name).renderText("REPO-ROVER-RUNNER")
+        except Exception:
+            continue
+
+    return BANNER
+
+
+def _print_banner() -> None:
+    banner_text = _render_banner().rstrip("\n")
+
+    try:
+        from rich.console import Console
+    except ImportError:
+        print(banner_text)
+        return
+
+    console = Console()
+    lines = banner_text.splitlines()
+    total = max(len(lines), 1)
+
+    for index, line in enumerate(lines):
+        red = _interpolate_channel(GRADIENT_START[0], GRADIENT_END[0], index, total)
+        green = _interpolate_channel(GRADIENT_START[1], GRADIENT_END[1], index, total)
+        blue = _interpolate_channel(GRADIENT_START[2], GRADIENT_END[2], index, total)
+        console.print(line, style=f"bold rgb({red},{green},{blue})")
+
+    console.print("REPO ROVER RUNNER", style="bold")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -83,7 +128,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    print(BANNER)
+    _print_banner()
 
     try:
         provider_ops = RepoOpsFactory.create(args.provider)

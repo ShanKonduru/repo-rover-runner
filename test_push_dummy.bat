@@ -2,6 +2,8 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
+set "PYTHON_EXE=%SCRIPT_DIR%.venv\Scripts\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
 if not "%REPO_CONFIG_FILE%"=="" (
   set "ENV_FILE=%REPO_CONFIG_FILE%"
 ) else if /I "%REPO_PROVIDER%"=="github" (
@@ -47,7 +49,7 @@ set "REPO_PATH_ABS=%SCRIPT_DIR%%LOCAL_REPO_PATH%"
 
 set "ASKPASS_FILE="
 if not exist "%REPO_PATH_ABS%\.git" (
-  python "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
+  "%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
   if errorlevel 1 (
     if /I not "%REPO_URL:~0,8%"=="https://" (
       set "RC=1"
@@ -58,7 +60,7 @@ if not exist "%REPO_PATH_ABS%\.git" (
       set "RC=1"
       goto :cleanup
     )
-    python "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
+    "%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
     if errorlevel 1 (
       set "RC=1"
       goto :cleanup
@@ -66,7 +68,7 @@ if not exist "%REPO_PATH_ABS%\.git" (
   )
 )
 
-python "%SCRIPT_DIR%repo_rover_runner_cli.py" push-files ^
+"%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" push-files ^
   --repo-path "%REPO_PATH_ABS%" ^
   --branch "%TARGET_BRANCH%" ^
   --files "%SCRIPT_DIR%dummy_payload.txt" ^
@@ -87,7 +89,7 @@ if errorlevel 1 (
       goto :cleanup
     )
   )
-  python "%SCRIPT_DIR%repo_rover_runner_cli.py" push-files ^
+  "%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" push-files ^
     --repo-path "%REPO_PATH_ABS%" ^
     --branch "%TARGET_BRANCH%" ^
     --files "%SCRIPT_DIR%dummy_payload.txt" ^

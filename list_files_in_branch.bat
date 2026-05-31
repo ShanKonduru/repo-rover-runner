@@ -2,6 +2,8 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
+set "PYTHON_EXE=%SCRIPT_DIR%.venv\Scripts\python.exe"
+if not exist "%PYTHON_EXE%" set "PYTHON_EXE=python"
 if not "%REPO_CONFIG_FILE%"=="" (
   set "ENV_FILE=%REPO_CONFIG_FILE%"
 ) else if /I "%REPO_PROVIDER%"=="github" (
@@ -46,7 +48,7 @@ if "%BRANCH_TO_LIST%"=="" (
 set "REPO_PATH_ABS=%SCRIPT_DIR%%LOCAL_REPO_PATH%"
 
 if not exist "%REPO_PATH_ABS%\.git" (
-  python "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
+  "%PYTHON_EXE%" "%SCRIPT_DIR%repo_rover_runner_cli.py" clone --repo-url "%REPO_URL%" --dest "%REPO_PATH_ABS%"
   if errorlevel 1 exit /b 1
 )
 
