@@ -1,28 +1,75 @@
 name: Publish To TestPyPI
 
 on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
-  push:
-    tags:
-      - "v*.*.*-rc*"
-      - "v*.*.*-beta*"
-      - "v*.*.*-alpha*"
 
 jobs:
   publish:
     name: Build and publish to TestPyPI
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Set commit-scoped dev version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            BUILD_NO="${{ github.event.workflow_run.run_number }}"
+            TARGET_SHA="${{ github.event.workflow_run.head_sha }}"
+          else
+            BUILD_NO="${{ github.run_number }}"
+            TARGET_SHA="${{ github.sha }}"
+          fi
+
+          SHORT_SHA="${TARGET_SHA:0:7}"
+          export BUILD_NO SHORT_SHA
+
+          python - <<'PY'
+          import os
+          import pathlib
+          import re
+
+          pyproject = pathlib.Path("pyproject.toml")
+          text = pyproject.read_text(encoding="utf-8")
+          match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', text, flags=re.MULTILINE)
+          if not match:
+              raise SystemExit("Could not find project version in pyproject.toml")
+
+          base_version = match.group(1)
+          core_version = base_version.split(".dev", 1)[0]
+          test_version = f"{core_version}.dev{os.environ['BUILD_NO']}"
+
+          updated = re.sub(
+              r'^version\s*=\s*"([^"]+)"\s*$',
+              f'version = "{test_version}"',
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          pyproject.write_text(updated, encoding="utf-8")
+          print(f"Using TestPyPI package version: {test_version} (sha {os.environ['SHORT_SHA']})")
+          PY
 
       - name: Build distribution
         run: |

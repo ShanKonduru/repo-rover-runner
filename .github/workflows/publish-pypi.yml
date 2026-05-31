@@ -1,31 +1,82 @@
 name: Publish To PyPI
 
 on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   publish:
     name: Build and publish to PyPI
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Validate stable tag and version match
+        id: release_guard
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TARGET_SHA="${{ github.event.workflow_run.head_sha }}"
+          else
+            TARGET_SHA="${{ github.sha }}"
+          fi
+
+          STABLE_TAG="$(git tag --points-at "$TARGET_SHA" | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)"
+
+          if [ -z "$STABLE_TAG" ]; then
+            echo "No stable version tag on this commit. Skipping PyPI publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          VERSION="$(python - <<'PY'
+          import pathlib
+          import re
+
+          text = pathlib.Path("pyproject.toml").read_text(encoding="utf-8")
+          match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', text, flags=re.MULTILINE)
+          if not match:
+              raise SystemExit("Could not find project version in pyproject.toml")
+          print(match.group(1))
+          PY
+          )"
+
+          if [ "v$VERSION" != "$STABLE_TAG" ]; then
+            echo "Version/tag mismatch: pyproject.toml has $VERSION but tag is $STABLE_TAG"
+            exit 1
+          fi
+
+          echo "Tag and version match ($STABLE_TAG). PyPI publish enabled."
+          echo "publish=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Python
+        if: steps.release_guard.outputs.publish == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Build distribution
+        if: steps.release_guard.outputs.publish == 'true'
         run: |
           python -m pip install --upgrade pip
           pip install build
           python -m build
 
       - name: Publish to PyPI
+        if: steps.release_guard.outputs.publish == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
