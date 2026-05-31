@@ -81,3 +81,5 @@ jobs:
       - name: Publish to PyPI
         if: steps.release_guard.outputs.publish == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
