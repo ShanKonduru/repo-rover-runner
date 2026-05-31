@@ -31,12 +31,18 @@ def _render_banner() -> str:
         return BANNER
 
     for font_name in ("double_blocky", "blocky", "big", "slant", "standard"):
-        try:
-            return Figlet(font=font_name).renderText("REPO-ROVER-RUNNER")
-        except Exception:
-            continue
+        rendered_banner = _render_banner_with_font(Figlet, font_name)
+        if rendered_banner:
+            return rendered_banner
 
     return BANNER
+
+
+def _render_banner_with_font(figlet_class: object, font_name: str) -> Optional[str]:
+    try:
+        return figlet_class(font=font_name).renderText("REPO-ROVER-RUNNER")  # type: ignore[call-arg]
+    except Exception:
+        return None
 
 
 def _print_banner() -> None:
