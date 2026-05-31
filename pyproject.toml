@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "repo-rover-runner"
+version = "0.1.0"
+description = "Cross-platform GitHub/Bitbucket repository automation toolkit"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Repo Rover Runner Maintainers" }
+]
+keywords = ["git", "github", "bitbucket", "automation", "cli"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: OS Independent",
+  "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = []
+
+[project.scripts]
+repo-rover-runner-client = "repo_rover_runner_client:main"
+
+[tool.setuptools]
+py-modules = ["repo_rover_runner_client", "repo_rover_runner_cli"]
+
+[tool.setuptools.packages.find]
+include = ["repo_rover_runner*"]
+exclude = ["tests*", "tmp*"]

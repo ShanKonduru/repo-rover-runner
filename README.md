@@ -206,3 +206,48 @@ Linux/macOS:
 ```
 
 The test runner executes unittest with coverage and prints a coverage report.
+
+## GitHub Actions Workflows
+
+The repository now includes these workflows under `.github/workflows/`:
+
+1. `ci.yml`
+2. `publish-testpypi.yml`
+3. `publish-pypi.yml`
+
+### CI and Security
+
+`ci.yml` runs on push and pull request and includes:
+
+1. Unit tests with coverage
+2. Dependency vulnerability scan with `pip-audit`
+3. Static security scan with `bandit`
+4. Secret scan with `gitleaks`
+
+### TestPyPI Publish
+
+`publish-testpypi.yml` publishes to TestPyPI:
+
+1. Manually via `workflow_dispatch`
+2. Automatically for pre-release tags like:
+   1. `vX.Y.Z-rcN`
+   2. `vX.Y.Z-betaN`
+   3. `vX.Y.Z-alphaN`
+
+### PyPI Publish
+
+`publish-pypi.yml` publishes to PyPI:
+
+1. Manually via `workflow_dispatch`
+2. Automatically when a GitHub Release is published
+
+### Required Repository Setup for Publishing
+
+Both publish workflows use trusted publishing (`id-token: write`) with `pypa/gh-action-pypi-publish`.
+
+Configure these environments in GitHub repository settings:
+
+1. `testpypi`
+2. `pypi`
+
+Then configure trusted publisher entries in TestPyPI/PyPI for this repository and workflow files.
