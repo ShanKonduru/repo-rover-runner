@@ -112,4 +112,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from repo_rover_runner_client import main as client_main
+
+    raise SystemExit(client_main())

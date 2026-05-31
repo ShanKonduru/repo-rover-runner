@@ -3,6 +3,7 @@ from __future__ import annotations
 import runpy
 import sys
 import unittest
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -97,6 +98,19 @@ class TestCliClient(unittest.TestCase):
         with patch.object(sys, "argv", ["repo_rover_runner_client.py", "ping", "--repo-url", "https://x"]), patch(
             "repo_rover_runner_client.RepoOpsFactory.create"
         ) as create_mock, patch("repo_rover_runner_client.GitAuthSession"):
+            mock_ops = MagicMock()
+            mock_ops.provider_name = "github"
+            create_mock.return_value = mock_ops
+            with self.assertRaises(SystemExit) as ctx:
+                runpy.run_path("repo_rover_runner_client.py", run_name="__main__")
+        self.assertEqual(ctx.exception.code, 0)
+
+    def test_client_main_dunder_executes_with_github_provider_env(self) -> None:
+        with patch.dict(os.environ, {"REPO_PROVIDER": "github"}, clear=False), patch.object(
+            sys, "argv", ["repo_rover_runner_client.py", "ping", "--repo-url", "https://x"]
+        ), patch("repo_rover_runner_client.RepoOpsFactory.create") as create_mock, patch(
+            "repo_rover_runner_client.GitAuthSession"
+        ):
             mock_ops = MagicMock()
             mock_ops.provider_name = "github"
             create_mock.return_value = mock_ops
