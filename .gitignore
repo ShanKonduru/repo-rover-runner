@@ -7,3 +7,6 @@ repo_rover_runner.*.env
 tmp/
 __pycache__/
 *.pyc
+
+test_results/Secutiry_reports/*
+!test_results/Secutiry_reports/.gitkeep

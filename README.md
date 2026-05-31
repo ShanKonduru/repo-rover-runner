@@ -25,11 +25,36 @@ Primary entrypoint:
 python repo_rover_runner_client.py --help
 ```
 
+Installed command aliases (Windows installs `.exe` launchers):
+
+```bash
+repo-rover-runner --help
+rrr --help
+```
+
 Legacy compatibility wrapper:
 
 ```bash
 python repo_rover_runner_cli.py --help
 ```
+
+## MCP Server
+
+The project now ships an MCP stdio server that exposes the same core operations.
+
+Start it with:
+
+```bash
+repo-rover-runner-mcp
+```
+
+Exposed MCP tools:
+
+1. `ping_repo`
+2. `clone_repo`
+3. `use_branch`
+4. `list_branches`
+5. `push_files`
 
 Supported subcommands:
 
@@ -206,6 +231,46 @@ Linux/macOS:
 ```
 
 The test runner executes unittest with coverage and prints a coverage report.
+
+## Security Reports
+
+Dev/security dependencies are available through either:
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+or:
+
+```bash
+pip install ".[dev]"
+```
+
+Generate security reports:
+
+Windows:
+
+```bat
+run_security_reports.bat
+```
+
+Linux/macOS:
+
+```bash
+./run_security_reports.sh
+```
+
+All generated security artifacts are written under:
+
+1. `test_results/Secutiry_reports/pip_audit_report.json`
+2. `test_results/Secutiry_reports/bandit_report.json`
+3. `test_results/Secutiry_reports/gitleaks_report.json`
+4. `test_results/Secutiry_reports/pip_audit_report.html`
+5. `test_results/Secutiry_reports/bandit_report.html`
+6. `test_results/Secutiry_reports/gitleaks_report.html`
+7. `test_results/Secutiry_reports/security_consolidated.html`
+
+`sec-report-kit` is used when available to convert JSON reports to HTML, with an automatic built-in HTML fallback to guarantee report generation.
 
 ## GitHub Actions Workflows
 

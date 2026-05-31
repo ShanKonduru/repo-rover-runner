@@ -18,13 +18,27 @@ classifiers = [
   "Operating System :: OS Independent",
   "Topic :: Software Development :: Version Control :: Git",
 ]
-dependencies = []
+dependencies = [
+  "mcp>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "coverage>=7.6.0",
+  "pip-audit>=2.7.3",
+  "bandit>=1.7.9",
+  "gitleaks",
+  "sec-report-kit",
+]
 
 [project.scripts]
 repo-rover-runner-client = "repo_rover_runner_client:main"
+repo-rover-runner = "repo_rover_runner_client:main"
+rrr = "repo_rover_runner_client:main"
+repo-rover-runner-mcp = "repo_rover_runner_mcp_server:main"
 
 [tool.setuptools]
-py-modules = ["repo_rover_runner_client", "repo_rover_runner_cli"]
+py-modules = ["repo_rover_runner_client", "repo_rover_runner_cli", "repo_rover_runner_mcp_server"]
 
 [tool.setuptools.packages.find]
 include = ["repo_rover_runner*"]

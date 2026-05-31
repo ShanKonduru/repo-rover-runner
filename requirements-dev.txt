@@ -1,0 +1,7 @@
+-r requirements.txt
+coverage>=7.6.0
+pip-audit>=2.7.3
+bandit>=1.7.9
+gitleaks
+sec-report-kit
+mcp>=1.0.0
