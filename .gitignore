@@ -8,5 +8,20 @@ tmp/
 __pycache__/
 *.pyc
 
+# Node / frontend artifacts
+node_modules/
+**/node_modules/
+dist/
+build/
+.vite/
+
+# Worktop sample runtime artifacts
+examples/worktop-sample/backend.log
+examples/worktop-sample/frontend.log
+examples/worktop-sample/_tmp-job/
+examples/worktop-sample/_tmp-repo/
+examples/worktop-sample/backend/node_modules/
+examples/worktop-sample/frontend/node_modules/
+
 test_results/Secutiry_reports/*
 !test_results/Secutiry_reports/.gitkeep
