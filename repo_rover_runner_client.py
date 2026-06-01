@@ -48,6 +48,9 @@ def _render_banner_with_font(figlet_class: object, font_name: str) -> Optional[s
 def _print_banner() -> None:
     banner_text = _render_banner().rstrip("\n")
 
+    # Keep banner visually separated from any prior single-line status output.
+    print()
+
     try:
         from rich.console import Console
     except ImportError:

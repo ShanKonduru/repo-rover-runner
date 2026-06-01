@@ -91,9 +91,15 @@ class TestCliClient(unittest.TestCase):
         mock_ops.push_files.assert_called_once()
 
     def test_main_handles_git_error(self) -> None:
-        with patch("repo_rover_runner_client.RepoOpsFactory.create", side_effect=repo_rover_runner_client.GitCommandError("x")):
+        stdout = StringIO()
+        stderr = StringIO()
+        with patch("sys.stdout", stdout), patch("sys.stderr", stderr), patch(
+            "repo_rover_runner_client.RepoOpsFactory.create", side_effect=repo_rover_runner_client.GitCommandError("x")
+        ):
             rc = repo_rover_runner_client.main(["ping", "--repo-url", "https://x"])
         self.assertEqual(rc, 1)
+        self.assertIn("REPO ROVER RUNNER", stdout.getvalue())
+        self.assertIn("ERROR: x", stderr.getvalue())
 
     def test_render_banner_falls_back_when_pyfiglet_is_missing(self) -> None:
         original_import = builtins.__import__
@@ -131,7 +137,7 @@ class TestCliClient(unittest.TestCase):
         ):
             repo_rover_runner_client._print_banner()
 
-        self.assertEqual(stdout.getvalue(), "line1\nline2\n")
+        self.assertEqual(stdout.getvalue(), "\nline1\nline2\n")
 
     def test_legacy_wrapper_executes(self) -> None:
         with patch("repo_rover_runner_client.main", return_value=0):

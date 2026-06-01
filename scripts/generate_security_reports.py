@@ -9,6 +9,7 @@ import json
 import shutil
 import subprocess  # nosec B404
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
@@ -26,7 +27,18 @@ class ToolRunResult:
         self.json_path = json_path
 
 
+def log_info(message: str) -> None:
+    print(f"[INFO] {message}", flush=True)
+
+
+def log_warn(message: str) -> None:
+    print(f"[WARN] {message}", flush=True)
+
+
 def run_command(command: List[str], cwd: Path, timeout_seconds: int = 120) -> Tuple[int, str, str]:
+    command_text = subprocess.list2cmdline(command)
+    start = time.monotonic()
+    log_info(f"Running: {command_text}")
     try:
         process = subprocess.run(  # nosec B603
             command,
@@ -36,23 +48,31 @@ def run_command(command: List[str], cwd: Path, timeout_seconds: int = 120) -> Tu
             encoding="utf-8",
             timeout=timeout_seconds,
         )
+        elapsed = time.monotonic() - start
+        log_info(f"Completed (rc={process.returncode}) in {elapsed:.1f}s")
         return process.returncode, process.stdout, process.stderr
     except subprocess.TimeoutExpired as exc:
+        elapsed = time.monotonic() - start
         stdout = exc.stdout if isinstance(exc.stdout, str) else ""
         stderr = exc.stderr if isinstance(exc.stderr, str) else ""
         stderr = (stderr + "\n" if stderr else "") + f"Command timed out after {timeout_seconds}s"
+        log_warn(f"Command timed out after {elapsed:.1f}s")
         return 124, stdout, stderr
     except OSError as exc:
+        elapsed = time.monotonic() - start
+        log_warn(f"Command launch failed after {elapsed:.1f}s: {exc}")
         return 126, "", f"OS error launching command: {exc}"
 
 
 def run_pip_audit(json_path: Path) -> ToolRunResult:
+    log_info("Starting pip-audit scan")
     cmd = [sys.executable, "-m", "pip_audit", "-f", "json", "-o", str(json_path)]
     rc, out, err = run_command(cmd, ROOT)
     return ToolRunResult("pip-audit", cmd, rc, out, err, json_path)
 
 
 def run_bandit(json_path: Path) -> ToolRunResult:
+    log_info("Starting bandit scan")
     cmd = [
         sys.executable,
         "-m",
@@ -92,7 +112,9 @@ def resolve_gitleaks_executables() -> List[str]:
 
 
 def run_gitleaks(json_path: Path) -> ToolRunResult:
+    log_info("Starting gitleaks scan")
     for gitleaks in resolve_gitleaks_executables():
+        log_info(f"Trying gitleaks executable: {gitleaks}")
         cmd = [
             gitleaks,
             "detect",
@@ -111,9 +133,11 @@ def run_gitleaks(json_path: Path) -> ToolRunResult:
             return ToolRunResult("gitleaks", cmd, rc, out, err, json_path)
         # If executable launch failed or this binary is incompatible, try next candidate.
         if rc == 126:
+            log_warn(f"Skipping incompatible gitleaks executable: {gitleaks}")
             continue
         return ToolRunResult("gitleaks", cmd, rc, out, err, json_path)
 
+    log_warn("No runnable gitleaks binary found; trying python -m gitleaks fallback")
     fallback_cmd = [sys.executable, "-m", "gitleaks", "detect", "--source", ".", "--report-format", "json", "--report-path", str(json_path)]
     rc, out, err = run_command(fallback_cmd, ROOT)
     return ToolRunResult("gitleaks", fallback_cmd, rc, out, err, json_path)
@@ -163,7 +187,9 @@ def convert_json_to_html_with_sec_report_kit(tool_name: str, json_path: Path, ht
 
 
 def ensure_tool_html_report(tool_name: str, json_path: Path, html_path: Path) -> bool:
+    log_info(f"Rendering HTML report for {tool_name}")
     if convert_json_to_html_with_sec_report_kit(tool_name, json_path, html_path):
+        log_info(f"Rendered with sec-report-kit: {html_path.name}")
         return True
 
     try:
@@ -172,6 +198,7 @@ def ensure_tool_html_report(tool_name: str, json_path: Path, html_path: Path) ->
         parsed = {"error": f"Unable to parse JSON report: {json_path.name}"}
 
     html_path.write_text(_render_json_html(f"{tool_name} security report", parsed), encoding="utf-8")
+    log_warn(f"sec-report-kit unavailable/failed for {tool_name}; used built-in HTML renderer")
     return False
 
 
@@ -208,6 +235,7 @@ def summarize_result(tool_name: str, data: Any) -> str:
 def build_consolidated_html_with_sec_report_kit() -> bool:
     tool = shutil.which("sec-report-kit")
     if not tool:
+        log_warn("sec-report-kit not found; consolidated report will use built-in renderer")
         return False
 
     desired_output = REPORT_DIR / "security_consolidated.html"
@@ -222,6 +250,7 @@ def build_consolidated_html_with_sec_report_kit() -> bool:
     cmd = [tool, "render", "consolidated", "--input", str(REPORT_DIR), "--output", str(REPORT_DIR), "--target", "repo-rover-runner"]
     rc, _out, _err = run_command(cmd, ROOT)
     if rc != 0:
+        log_warn("sec-report-kit failed to render consolidated report")
         return False
 
     if desired_output.exists() and desired_output.stat().st_size > 0:
@@ -294,6 +323,7 @@ def build_consolidated_html(results: List[ToolRunResult], generated_html: Dict[s
 
 
 def main() -> int:
+    log_info(f"Security report run started. Output directory: {REPORT_DIR}")
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
 
     results = [
@@ -313,9 +343,11 @@ def main() -> int:
     if build_consolidated_html_with_sec_report_kit():
         consolidated = REPORT_DIR / "security_consolidated.html"
         consolidated_renderer = "sec-report-kit"
+        log_info("Consolidated report rendered with sec-report-kit")
     else:
         consolidated = build_consolidated_html(results, generated_html)
         consolidated_renderer = "built-in-fallback"
+        log_warn("Consolidated report rendered with built-in fallback")
 
     print(f"Security reports generated in: {REPORT_DIR}")
     for result in results:
