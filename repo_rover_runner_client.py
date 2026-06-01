@@ -45,8 +45,19 @@ def _render_banner_with_font(figlet_class: object, font_name: str) -> Optional[s
         return None
 
 
+def _can_encode_text(text: str) -> bool:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        text.encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
 def _print_banner() -> None:
     banner_text = _render_banner().rstrip("\n")
+    if not _can_encode_text(banner_text):
+        banner_text = BANNER
 
     # Keep banner visually separated from any prior single-line status output.
     print()
@@ -61,13 +72,16 @@ def _print_banner() -> None:
     lines = banner_text.splitlines()
     total = max(len(lines), 1)
 
-    for index, line in enumerate(lines):
-        red = _interpolate_channel(GRADIENT_START[0], GRADIENT_END[0], index, total)
-        green = _interpolate_channel(GRADIENT_START[1], GRADIENT_END[1], index, total)
-        blue = _interpolate_channel(GRADIENT_START[2], GRADIENT_END[2], index, total)
-        console.print(line, style=f"bold rgb({red},{green},{blue})")
+    try:
+        for index, line in enumerate(lines):
+            red = _interpolate_channel(GRADIENT_START[0], GRADIENT_END[0], index, total)
+            green = _interpolate_channel(GRADIENT_START[1], GRADIENT_END[1], index, total)
+            blue = _interpolate_channel(GRADIENT_START[2], GRADIENT_END[2], index, total)
+            console.print(line, style=f"bold rgb({red},{green},{blue})")
 
-    console.print("REPO ROVER RUNNER", style="bold")
+        console.print("REPO ROVER RUNNER", style="bold")
+    except UnicodeEncodeError:
+        print(BANNER)
 
 
 def build_parser() -> argparse.ArgumentParser:

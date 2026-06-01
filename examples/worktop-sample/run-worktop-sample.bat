@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 set "ROOT=%~dp0"
-set "REPO_ROOT=%ROOT%..\.."
+for %%I in ("%ROOT%..\..") do set "REPO_ROOT=%%~fI"
 set "BACKEND_DIR=%ROOT%backend"
 set "FRONTEND_DIR=%ROOT%frontend"
 set "PYTHON_BIN=%REPO_ROOT%\.venv\Scripts\python.exe"
@@ -67,6 +67,7 @@ if not exist "%FRONTEND_DIR%\node_modules" (
 set "WORKTOP_JOB_DIR=%ROOT%_tmp-job"
 if exist "%WORKTOP_JOB_DIR%" rmdir /s /q "%WORKTOP_JOB_DIR%"
 if exist "%WORKTOP_REPO_DIR%" rmdir /s /q "%WORKTOP_REPO_DIR%"
+mkdir "%WORKTOP_JOB_DIR%" >nul 2>&1
 
 if "%ALLOWED_REPO_PREFIXES%"=="" (
   echo WARNING: ALLOWED_REPO_PREFIXES is not set. The backend sample allows any repo URL.
@@ -134,7 +135,17 @@ exit /b 1
 
 :load_env_file
 set "ENV_PATH=%~1"
-for /f "usebackq eol=# tokens=1,* delims==" %%A in ("%ENV_PATH%") do (
-  if not "%%A"=="" set "%%A=%%B"
+for /f "usebackq tokens=1,* delims==" %%A in (`powershell -NoProfile -Command ^
+  "$lines = Get-Content -LiteralPath '%ENV_PATH%';" ^
+  "foreach ($line in $lines) {" ^
+  "  if ([string]::IsNullOrWhiteSpace($line)) { continue }" ^
+  "  if ($line.TrimStart().StartsWith('#')) { continue }" ^
+  "  $parts = $line -split '=', 2;" ^
+  "  if ($parts.Count -lt 2) { continue }" ^
+  "  $key = $parts[0].Trim();" ^
+  "  $value = $parts[1];" ^
+  "  if ($key) { [Console]::WriteLine(($key + '=' + $value)) }" ^
+  "}"`) do (
+  set "%%A=%%B"
 )
 exit /b 0

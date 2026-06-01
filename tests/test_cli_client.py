@@ -139,6 +139,39 @@ class TestCliClient(unittest.TestCase):
 
         self.assertEqual(stdout.getvalue(), "\nline1\nline2\n")
 
+    def test_print_banner_falls_back_when_stdout_encoding_cannot_encode_banner(self) -> None:
+        class EncodedStdout(StringIO):
+            encoding = "cp1252"
+
+        stdout = EncodedStdout()
+        original_import = builtins.__import__
+
+        def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "rich" or name.startswith("rich."):
+                raise ImportError
+            return original_import(name, globals, locals, fromlist, level)
+
+        with patch("repo_rover_runner_client._render_banner", return_value="█▀█\n█▀▄"), patch("sys.stdout", stdout), patch(
+            "builtins.__import__", side_effect=fake_import
+        ):
+            repo_rover_runner_client._print_banner()
+
+        self.assertEqual(stdout.getvalue(), "\n" + repo_rover_runner_client.BANNER + "\n")
+
+    def test_print_banner_falls_back_when_rich_console_cannot_encode_unicode(self) -> None:
+        stdout = StringIO()
+
+        class FakeConsole:
+            def print(self, text, style=None):
+                raise UnicodeEncodeError("charmap", "█", 0, 1, "character maps to <undefined>")
+
+        with patch("repo_rover_runner_client._render_banner", return_value="█▀█\n█▀▄"), patch("sys.stdout", stdout), patch(
+            "rich.console.Console", return_value=FakeConsole()
+        ):
+            repo_rover_runner_client._print_banner()
+
+        self.assertEqual(stdout.getvalue(), "\n" + repo_rover_runner_client.BANNER + "\n")
+
     def test_legacy_wrapper_executes(self) -> None:
         with patch("repo_rover_runner_client.main", return_value=0):
             with self.assertRaises(SystemExit) as ctx:

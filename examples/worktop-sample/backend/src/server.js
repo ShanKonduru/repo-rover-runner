@@ -124,11 +124,24 @@ function getProviderDefaults(provider) {
 function buildChildEnv(provider, repoUrl) {
   const resolvedProvider = resolveProvider(provider, repoUrl);
   const providerEnv = parseEnvFile(providerEnvFiles[resolvedProvider]);
-  return {
+  const childEnv = {
     ...process.env,
     ...providerEnv,
     REPO_PROVIDER: resolvedProvider
   };
+
+  for (const key of [
+    "GIT_AUTHOR_NAME",
+    "GIT_AUTHOR_EMAIL",
+    "GIT_COMMITTER_NAME",
+    "GIT_COMMITTER_EMAIL"
+  ]) {
+    if (typeof childEnv[key] === "string" && childEnv[key].trim() === "") {
+      delete childEnv[key];
+    }
+  }
+
+  return childEnv;
 }
 
 function validateInput(body) {
