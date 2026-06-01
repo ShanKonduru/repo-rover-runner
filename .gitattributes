@@ -1,0 +1,8 @@
+# Normalize text files by default.
+* text=auto
+
+# Shell scripts must stay LF for Unix execution environments.
+*.sh text eol=lf
+
+# Batch scripts should use CRLF on Windows.
+*.bat text eol=crlf
