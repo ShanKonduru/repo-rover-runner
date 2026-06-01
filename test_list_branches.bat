@@ -4,16 +4,24 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "SCRIPT_DIR=%~dp0"
 if not "%REPO_CONFIG_FILE%"=="" (
   set "ENV_FILE=%REPO_CONFIG_FILE%"
-) else if /I "%REPO_PROVIDER%"=="github" (
-  set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.github.env"
-) else if /I "%REPO_PROVIDER%"=="bitbucket" (
-  set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.bitbucket.env"
-) else if exist "%SCRIPT_DIR%repo_rover_runner.bitbucket.env" (
-  set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.bitbucket.env"
-) else if exist "%SCRIPT_DIR%repo_rover_runner.github.env" (
-  set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.github.env"
 ) else (
-  set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.env"
+  if /I "%REPO_PROVIDER%"=="github" (
+    set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.github.env"
+  ) else (
+    if /I "%REPO_PROVIDER%"=="bitbucket" (
+      set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.bitbucket.env"
+    ) else (
+      if exist "%SCRIPT_DIR%repo_rover_runner.bitbucket.env" (
+        set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.bitbucket.env"
+      ) else (
+        if exist "%SCRIPT_DIR%repo_rover_runner.github.env" (
+          set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.github.env"
+        ) else (
+          set "ENV_FILE=%SCRIPT_DIR%repo_rover_runner.env"
+        )
+      )
+    )
+  )
 )
 
 if not exist "%ENV_FILE%" (
@@ -21,7 +29,7 @@ if not exist "%ENV_FILE%" (
   exit /b 1
 )
 
-for /f "usebackq tokens=1,* delims==" %%A in ("%ENV_FILE%") do (
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /R "^[A-Za-z_][A-Za-z0-9_]*=.*" "%ENV_FILE%"`) do (
   if not "%%A"=="" if /I not "%%A:~0,1"=="#" set "%%A=%%B"
 )
 
