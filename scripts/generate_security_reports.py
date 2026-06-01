@@ -42,6 +42,8 @@ def run_command(command: List[str], cwd: Path, timeout_seconds: int = 120) -> Tu
         stderr = exc.stderr if isinstance(exc.stderr, str) else ""
         stderr = (stderr + "\n" if stderr else "") + f"Command timed out after {timeout_seconds}s"
         return 124, stdout, stderr
+    except OSError as exc:
+        return 126, "", f"OS error launching command: {exc}"
 
 
 def run_pip_audit(json_path: Path) -> ToolRunResult:
@@ -71,9 +73,26 @@ def run_bandit(json_path: Path) -> ToolRunResult:
     return ToolRunResult("bandit", cmd, rc, out, err, json_path)
 
 
+def resolve_gitleaks_executables() -> List[str]:
+    # Prefer a repo-local binary, then fall back to PATH.
+    local_candidates = [
+        ROOT / "bin" / "gitleaks.exe",
+        ROOT / "bin" / "gitleaks",
+    ]
+    candidates: List[str] = []
+    for candidate in local_candidates:
+        if candidate.exists():
+            candidates.append(str(candidate))
+
+    path_candidate = shutil.which("gitleaks")
+    if path_candidate and path_candidate not in candidates:
+        candidates.append(path_candidate)
+
+    return candidates
+
+
 def run_gitleaks(json_path: Path) -> ToolRunResult:
-    gitleaks = shutil.which("gitleaks")
-    if gitleaks:
+    for gitleaks in resolve_gitleaks_executables():
         cmd = [
             gitleaks,
             "detect",
@@ -88,6 +107,11 @@ def run_gitleaks(json_path: Path) -> ToolRunResult:
             "--no-banner",
         ]
         rc, out, err = run_command(cmd, ROOT)
+        if rc == 0:
+            return ToolRunResult("gitleaks", cmd, rc, out, err, json_path)
+        # If executable launch failed or this binary is incompatible, try next candidate.
+        if rc == 126:
+            continue
         return ToolRunResult("gitleaks", cmd, rc, out, err, json_path)
 
     fallback_cmd = [sys.executable, "-m", "gitleaks", "detect", "--source", ".", "--report-format", "json", "--report-path", str(json_path)]

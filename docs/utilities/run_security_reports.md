@@ -22,6 +22,7 @@ Generates the repository's security report artifacts.
 
 - Python available either in `.venv` on Windows or on `PATH`.
 - Any dependencies required by `scripts/generate_security_reports.py` installed in the current environment.
+- `gitleaks` installed separately as a system CLI and available on `PATH`.
 
 ## Notes
 

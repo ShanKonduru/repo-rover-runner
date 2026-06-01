@@ -18,6 +18,7 @@ Most helpers follow the same conventions:
 Utility docs:
 
 - [create_new_branch.md](create_new_branch.md)
+- [install_dev_dependencies.md](install_dev_dependencies.md)
 - [list_files_in_branch.md](list_files_in_branch.md)
 - [run_bitbucket_connectivity.md](run_bitbucket_connectivity.md)
 - [run_bitbucket_tests.md](run_bitbucket_tests.md)
