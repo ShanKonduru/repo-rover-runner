@@ -10,6 +10,8 @@ Repo Rover Runner is a local automation toolkit that standardizes a small set of
 
 It is built around a Python CLI plus Windows (.bat) and Linux/macOS (.sh) helper scripts.
 
+Script help documents are available under `docs/utilities/`.
+
 ## What This Workspace Is Doing
 
 This project automates these tasks against a remote git repository:
